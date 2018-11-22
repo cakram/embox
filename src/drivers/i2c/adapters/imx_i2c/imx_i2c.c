@@ -23,6 +23,10 @@ EMBOX_UNIT_INIT(imx_i2c_init);
 
 #define IOMUXC_BASE                         0x020E0000
 
+#define IOMUXC_SW_MUX_CTL_PAD_EIM_EB2_B          0x08C
+#define IOMUXC_SW_MUX_CTL_PAD_EIM_DATA16         0x090
+#define IOMUXC_SW_MUX_CTL_PAD_EIM_DATA17         0x094
+#define IOMUXC_SW_MUX_CTL_PAD_EIM_DATA18         0x098
 
 #define IOMUXC_SW_MUX_CTL_PAD_EIM_DATA21         0x0A4
 
@@ -34,6 +38,17 @@ EMBOX_UNIT_INIT(imx_i2c_init);
 #define IOMUXC_SW_MUX_CTL_PAD_KEY_COL0           0x1F8
 #define IOMUXC_SW_MUX_CTL_PAD_KEY_ROW0           0x1FC
 
+#define IOMUXC_SW_MUX_CTL_PAD_KEY_COL3           0x210
+#define IOMUXC_SW_MUX_CTL_PAD_KEY_ROW3           0x214
+
+#define IOMUXC_SW_MUX_CTL_PAD_GPIO03             0x22C
+
+#define IOMUXC_SW_MUX_CTL_PAD_GPIO06             0x230
+
+#define IOMUXC_SW_MUX_CTL_PAD_GPIO05             0x23C
+
+#define IOMUXC_SW_MUX_CTL_PAD_GPIO16             0x248
+
 #define IOMUXC_SW_MUX_CTL_PAD_CSI0_DATA08        0x278
 #define IOMUXC_SW_MUX_CTL_PAD_CSI0_DATA09        0x27C
 
@@ -42,16 +57,15 @@ EMBOX_UNIT_INIT(imx_i2c_init);
 
 #define IOMUXC_I2C1_SCL_IN_SELECT_INPUT          0x898
 #define IOMUXC_I2C1_SDA_IN_SELECT_INPUT          0x89C
+#define IOMUXC_I2C2_SCL_IN_SELECT_INPUT          0x8A0
+#define IOMUXC_I2C2_SDA_IN_SELECT_INPUT          0x8A4
+#define IOMUXC_I2C3_SCL_IN_SELECT_INPUT          0x8A8
+#define IOMUXC_I2C3_SDA_IN_SELECT_INPUT          0x8AC
 
 #define IOMUXC_UART1_UART_RX_DATA_SELECT_INPUT   0x920
 #define IOMUXC_UART2_UART_RX_DATA_SELECT_INPUT   0x928
 #define IOMUXC_UART3_UART_RX_DATA_SELECT_INPUT   0x930
 #define IOMUXC_UART4_UART_RX_DATA_SELECT_INPUT   0x938
-
-
-#define I2C1_BASE     0x21A0000
-#define I2C2_BASE     0x21A4000
-#define I2C3_BASE     0x21A8000
 
 void iomuxc_set_reg(uint32_t reg, uint32_t val) {
 	REG32_STORE(IOMUXC_BASE + reg, val);
@@ -60,8 +74,56 @@ void iomuxc_set_reg(uint32_t reg, uint32_t val) {
 uint32_t iomuxc_get_reg(uint32_t reg) {
 	return REG32_LOAD(IOMUXC_BASE + reg);
 }
-#if 0
-static void imx_i2c1_pins_init(void) {
+
+
+#define I2C1_BASE     0x21A0000
+#define I2C2_BASE     0x21A4000
+#define I2C3_BASE     0x21A8000
+
+#define I2C1_IRQ_NUM  68
+#define I2C2_IRQ_NUM  69
+#define I2C3_IRQ_NUM  70
+
+
+static inline void imx_i2c3_pins_init(void) {
+#if I2C3_PIN_SEL == 1
+	iomuxc_set_reg(IOMUXC_SW_MUX_CTL_PAD_GPIO03, 2)
+	iomuxc_set_reg(IOMUXC_I2C3_SCL_IN_SELECT_INPUT, 1);
+
+	iomuxc_set_reg(IOMUXC_SW_MUX_CTL_PAD_GPIO06, 2);
+	iomuxc_set_reg(IOMUXC_I2C3_SDA_IN_SELECT_INPUT, 1);
+#elif I2C3_PIN_SEL == 2
+	iomuxc_set_reg(IOMUXC_SW_MUX_CTL_PAD_GPIO05, 6);
+	iomuxc_set_reg(IOMUXC_I2C3_SCL_IN_SELECT_INPUT, 2);
+
+	iomuxc_set_reg(IOMUXC_SW_MUX_CTL_PAD_GPIO16, 6);
+	iomuxc_set_reg(IOMUXC_I2C3_SDA_IN_SELECT_INPUT, 2);
+#else
+	iomuxc_set_reg(IOMUXC_SW_MUX_CTL_PAD_EIM_DATA17, 6);
+	iomuxc_set_reg(IOMUXC_I2C3_SCL_IN_SELECT_INPUT, 0);
+
+	iomuxc_set_reg(IOMUXC_SW_MUX_CTL_PAD_EIM_DATA18, 6);
+	iomuxc_set_reg(IOMUXC_I2C3_SDA_IN_SELECT_INPUT, 0);
+#endif
+}
+
+static inline void imx_i2c2_pins_init(void) {
+#if I2C2_PIN_SEL
+	iomuxc_set_reg(IOMUXC_SW_MUX_CTL_PAD_KEY_COL3, 4)
+	iomuxc_set_reg(IOMUXC_I2C2_SCL_IN_SELECT_INPUT, 1);
+
+	iomuxc_set_reg(IOMUXC_SW_MUX_CTL_PAD_KEY_ROW3, 4);
+	iomuxc_set_reg(IOMUXC_I2C2_SDA_IN_SELECT_INPUT, 1);
+#else
+	iomuxc_set_reg(IOMUXC_SW_MUX_CTL_PAD_EIM_EB2_B, 6);
+	iomuxc_set_reg(IOMUXC_I2C2_SCL_IN_SELECT_INPUT, 0);
+
+	iomuxc_set_reg(IOMUXC_SW_MUX_CTL_PAD_EIM_DATA16, 6);
+	iomuxc_set_reg(IOMUXC_I2C2_SDA_IN_SELECT_INPUT, 0);
+#endif
+}
+
+static inline void imx_i2c1_pins_init(void) {
 #if I2C1_PIN_SEL
 	iomuxc_set_reg(IOMUXC_SW_MUX_CTL_PAD_CSI0_DATA09, 4)
 	iomuxc_set_reg(IOMUXC_I2C1_SCL_IN_SELECT_INPUT, 1);
@@ -76,7 +138,7 @@ static void imx_i2c1_pins_init(void) {
 	iomuxc_set_reg(IOMUXC_I2C1_SDA_IN_SELECT_INPUT, 0);
 #endif
 }
-#endif
+
 static int imx_i2c_init(void) {
 	uint32_t temp;
 
