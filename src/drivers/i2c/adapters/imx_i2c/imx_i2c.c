@@ -7,6 +7,8 @@
 #include <util/log.h>
 
 #include <errno.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #include <hal/reg.h>
 #include <drivers/common/memory.h>
@@ -212,6 +214,20 @@ int imx_i2c_send(uint16_t addr, uint8_t ch) {
 	return 0;
 }
 
+static int imx_i2c_stop(void) {
+	uint32_t tmp;
+
+	tmp = REG8_LOAD(I2C2_BASE + IMX_I2C_I2CR);
+	tmp &= ~(IMX_I2C_I2CR_MSTA | IMX_I2C_I2CR_MTX) ;
+	REG8_STORE(I2C2_BASE + IMX_I2C_I2CR, tmp);
+	delay(100);
+	tmp = REG8_LOAD(I2C2_BASE + IMX_I2C_I2CR);
+	tmp &= ~(IMX_I2C_I2CR_IEN) ;
+	REG8_STORE(I2C2_BASE + IMX_I2C_I2CR, tmp);
+
+	return 0;
+}
+
 static int imx_i2c_start(void) {
 	uint32_t tmp;
 
@@ -228,13 +244,7 @@ static int imx_i2c_start(void) {
 
 	tmp = imx_i2c_bus_busy();
 	if (tmp) {
-		tmp = REG8_LOAD(I2C2_BASE + IMX_I2C_I2CR);
-		tmp &= ~(IMX_I2C_I2CR_MSTA | IMX_I2C_I2CR_MTX) ;
-		REG8_STORE(I2C2_BASE + IMX_I2C_I2CR, tmp);
-		delay(100);
-		tmp = REG8_LOAD(I2C2_BASE + IMX_I2C_I2CR);
-		tmp &= ~(IMX_I2C_I2CR_IEN) ;
-		REG8_STORE(I2C2_BASE + IMX_I2C_I2CR, tmp);
+		return -1;
 	}
 
 	tmp = REG8_LOAD(I2C2_BASE + IMX_I2C_I2CR);
@@ -244,23 +254,16 @@ static int imx_i2c_start(void) {
 	return 0;
 }
 
-int imx_i2c_receive(uint16_t addr, uint8_t *ch) {
-	uint32_t tmp;
+static int imx_i2c_rx(uint16_t addr, uint8_t *buff, size_t sz) {
 	int res = -1;
-
-	log_debug("start %d", addr);
-	if (imx_i2c_start()) {
-		log_error("i2c  bus error");
-		res = -1;
-		goto out;
-	}
+	int cnt;
+	uint32_t tmp;
 
 	/* write slave address */
 	REG8_STORE(I2C2_BASE + IMX_I2C_I2DR, (uint32_t)((addr << 1) | 0x1));
-	tmp = imx_i2c_trx_complete();
-	if (tmp) {
-		log_error("i2c complition error");
-		res = -1;
+	res = imx_i2c_trx_complete();
+	if (res) {
+		//log_error("i2c complition error");
 		goto out;
 	}
 	if (REG8_LOAD(I2C2_BASE + IMX_I2C_I2SR) &  IMX_I2C_I2SR_RXAK) {
@@ -275,31 +278,54 @@ int imx_i2c_receive(uint16_t addr, uint8_t *ch) {
 
 	/* dummy read */
 	tmp = REG8_LOAD(I2C2_BASE + IMX_I2C_I2DR);
-	tmp = imx_i2c_trx_complete();
-	if (tmp) {
-		log_error("i2c complition error");
+
+	res = sz;
+	for (cnt = sz; cnt > 0; cnt--) {
+		tmp = imx_i2c_trx_complete();
+		if (tmp) {
+			log_error("i2c complition error");
+			res = -1;
+			goto out;
+		}
+
+		res = 1;
+
+		if (cnt == 1) {
+			/*
+			 * It must generate STOP before read I2DR to prevent
+			 * controller from generating another clock cycle
+			 */
+			tmp = REG8_LOAD(I2C2_BASE + IMX_I2C_I2CR);
+			tmp &= ~(IMX_I2C_I2CR_MTX & IMX_I2C_I2CR_MSTA);
+			REG8_STORE(I2C2_BASE + IMX_I2C_I2CR, tmp);
+		}
+
+		imx_i2c_bus_busy();
+
+		tmp = REG8_LOAD(I2C2_BASE + IMX_I2C_I2DR);
+
+		*buff = (uint8_t)(tmp & 0xFF);
+
+	}
+
+out:
+	return res;
+}
+
+int imx_i2c_read(uint16_t addr, uint8_t *buff, size_t sz) {
+
+	int res = -1;
+
+	log_debug("start %d", addr);
+	if (imx_i2c_start()) {
+		log_error("i2c  bus error");
 		res = -1;
 		goto out;
 	}
 
-	res = 1;
+	res = imx_i2c_rx(addr, buff, sz);
 out:
-	/*
-	 * It must generate STOP before read I2DR to prevent
-	 * controller from generating another clock cycle
-	 */
-	tmp = REG8_LOAD(I2C2_BASE + IMX_I2C_I2CR);
-	tmp &= ~(IMX_I2C_I2CR_MTX & IMX_I2C_I2CR_MSTA);
-	REG8_STORE(I2C2_BASE + IMX_I2C_I2CR, tmp);
-
-	if (1 != res) {
-		return res;
-	}
-	imx_i2c_bus_busy();
-
-	tmp = REG8_LOAD(I2C2_BASE + IMX_I2C_I2DR);
-
-	*ch = (uint8_t)(tmp & 0xFF);
+	imx_i2c_stop();
 
 	return res;
 }
