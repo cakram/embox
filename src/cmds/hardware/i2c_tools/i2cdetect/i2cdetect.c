@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <stddef.h>
 
 static void print_usage(void) {
 	printf("Usage: i2cdetect -h\n");
@@ -22,7 +23,7 @@ static void print_error(void) {
 	printf("Wrong parameters\n");
 }
 
-extern int imx_i2c_receive(uint16_t addr, uint8_t *ch) ;
+extern int imx_i2c_read(uint16_t addr, uint8_t *ch, size_t sz) ;
 
 static void i2c_bus_list(void) {
 
@@ -38,7 +39,7 @@ static void i2c_bus_scan(long busn) {
 		if (0 == (i % 0x10)) {
 			printf("\n%2X:", (unsigned)i);
 		}
-		if (0 < imx_i2c_receive(i, &tmp)) {
+		if (0 == imx_i2c_read(i, &tmp, 0)) {
 			printf(" %2X", (unsigned)i);
 		} else {
 			printf(" --");
