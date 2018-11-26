@@ -53,7 +53,6 @@ int main(int argc, char **argv) {
 	int opt;
 	long busn = 0;
 
-
 	while (-1 != (opt = getopt(argc, argv, "hly:F:"))) {
 		switch (opt) {
 		case 'l':
@@ -75,4 +74,6 @@ int main(int argc, char **argv) {
 			return 0;
 		}
 	}
+
+	return 0;
 }
