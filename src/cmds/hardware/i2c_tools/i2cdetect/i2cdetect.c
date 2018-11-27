@@ -25,8 +25,6 @@ static void print_error(void) {
 	printf("Wrong parameters\n");
 }
 
-extern int imx_i2c_read(uint16_t addr, uint8_t *ch, size_t sz) ;
-
 static void i2c_bus_list(void) {
 	int i;
 	struct i2c_bus *bus;
@@ -48,7 +46,7 @@ static void i2c_bus_scan(long busn) {
 		if (0 == (i % 0x10)) {
 			printf("\n%2X:", (unsigned)i);
 		}
-		if (0 == imx_i2c_read(i, &tmp, 0)) {
+		if (0 == i2c_bus_read(busn, i, &tmp, 0)) {
 			printf(" %2X", (unsigned)i);
 		} else {
 			printf(" --");
