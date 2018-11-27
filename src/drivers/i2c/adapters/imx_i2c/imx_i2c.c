@@ -13,6 +13,8 @@
 #include <hal/reg.h>
 #include <drivers/common/memory.h>
 #include <drivers/clk/ccm_imx6.h>
+#include <drivers/i2c/i2c.h>
+
 #include <embox/unit.h>
 
 #include "imx_i2c.h"
@@ -86,6 +88,20 @@ uint32_t iomuxc_get_reg(uint32_t reg) {
 #define I2C2_IRQ_NUM  69
 #define I2C3_IRQ_NUM  70
 
+static struct imx_i2c imx_i2c1_adapter = {
+		.irq_num = I2C1_IRQ_NUM,
+		.base_addr = I2C1_BASE,
+};
+
+static struct imx_i2c imx_i2c2_adapter = {
+		.irq_num = I2C2_IRQ_NUM,
+		.base_addr = I2C2_BASE,
+};
+
+static struct imx_i2c imx_i2c3_adapter = {
+		.irq_num = I2C3_IRQ_NUM,
+		.base_addr = I2C3_BASE,
+};
 
 static inline void imx_i2c3_pins_init(void) {
 #if I2C3_PIN_SEL == 1
@@ -144,6 +160,11 @@ static inline void imx_i2c1_pins_init(void) {
 static int imx_i2c_init(void) {
 	uint32_t temp;
 
+	i2c_bus_register(&imx_i2c1_adapter, 1, "i2c1");
+	i2c_bus_register(&imx_i2c2_adapter, 2, "i2c2");
+	i2c_bus_register(&imx_i2c3_adapter, 3, "i2c3");
+
+
 	temp = REG8_LOAD(I2C2_BASE + IMX_I2C_I2CR);
 	log_debug("\ncr(%x)", temp);
 
@@ -161,6 +182,7 @@ static int imx_i2c_init(void) {
 	REG8_STORE(I2C2_BASE + IMX_I2C_IADR, 0x17);
 	REG8_STORE(I2C2_BASE + IMX_I2C_I2CR, 0 );
 	REG8_STORE(I2C2_BASE + IMX_I2C_I2SR, 0);
+
 
 	return 0;
 }
@@ -329,7 +351,6 @@ out:
 
 	return res;
 }
-
 
 static struct periph_memory_desc imx_i2c1_mem = {
 	.start = I2C1_BASE,

@@ -14,7 +14,6 @@
 #define IMX_I2C_I2SR  0x0C /* I2C Status Register */
 #define IMX_I2C_I2DR  0x10 /* I2C Data I/O Register */
 
-
 #define IMX_I2C_I2CR_IEN      0x80 /* 1 << 7 */
 #define IMX_I2C_I2CR_IIEN     0x40 /* 1 << 6 */
 #define IMX_I2C_I2CR_MSTA     0x20 /* 1 << 5 */
@@ -30,5 +29,11 @@
 #define IMX_I2C_I2SR_IIF      0x02 /* 1 << 1 */
 #define IMX_I2C_I2SR_RXAK     0x01 /* 1 << 0 */
 
+struct imx_i2c {
+	int irq_num;
+	int base_addr;
+
+	int state;
+};
 
 #endif /* SRC_DRIVERS_I2C_IMX6_I2C_IMX6_H_ */
