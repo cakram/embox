@@ -12,6 +12,8 @@
 #include <stdlib.h>
 #include <stddef.h>
 
+#include <drivers/i2c/i2c.h>
+
 static void print_usage(void) {
 	printf("Usage: i2cdetect -h\n");
 	printf("Usage: i2cdetect -l\n");
@@ -26,7 +28,14 @@ static void print_error(void) {
 extern int imx_i2c_read(uint16_t addr, uint8_t *ch, size_t sz) ;
 
 static void i2c_bus_list(void) {
-
+	int i;
+	struct i2c_bus *bus;
+	for (i = 0; i < I2C_BUS_MAX; i++) {
+		bus = i2c_bus_get(i);
+		if (bus) {
+			printf("%s\n", bus->name);
+		}
+	}
 }
 
 static void i2c_bus_scan(long busn) {
