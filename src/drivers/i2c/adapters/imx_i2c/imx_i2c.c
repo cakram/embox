@@ -158,22 +158,10 @@ static inline void imx_i2c1_pins_init(void) {
 }
 
 static int imx_i2c_init(void) {
-	uint32_t temp;
 
 	i2c_bus_register(&imx_i2c1_adapter, 1, "i2c1");
 	i2c_bus_register(&imx_i2c2_adapter, 2, "i2c2");
 	i2c_bus_register(&imx_i2c3_adapter, 3, "i2c3");
-
-
-	temp = REG8_LOAD(I2C2_BASE + IMX_I2C_I2CR);
-	log_debug("\ncr(%x)", temp);
-
-	temp = REG8_LOAD(I2C2_BASE + IMX_I2C_I2SR);
-	log_debug("\nsr(%x)", temp);
-
-	temp = REG8_LOAD(I2C2_BASE + IMX_I2C_IFDR);
-	log_debug("\nfr(%x)", temp);
-
 
 	//imx_i2c1_pins_init();
 	//clk_enable("i2c1");
@@ -183,26 +171,25 @@ static int imx_i2c_init(void) {
 	REG8_STORE(I2C2_BASE + IMX_I2C_I2CR, 0 );
 	REG8_STORE(I2C2_BASE + IMX_I2C_I2SR, 0);
 
-
 	return 0;
 }
 
 static void delay(int i) {
 	volatile int cnt;
-	for (cnt = 0; cnt < i * 10000 ; cnt++) {
+	for (cnt = 0; cnt < i * 1000 ; cnt++) {
 	}
 }
 
-int imx_i2c_bus_busy(void) {
+int imx_i2c_bus_busy(struct imx_i2c *adapter, int for_busy) {
 	uint32_t temp;
 	volatile int i;
 
-	for (i = 0; i < 10; i++) {
-		temp = REG8_LOAD(I2C2_BASE + IMX_I2C_I2SR);
+	for (i = 0; i < 100; i++) {
+		temp = REG8_LOAD(adapter->base_addr + IMX_I2C_I2SR);
 		/* check for arbitration lost */
 		if (temp & IMX_I2C_I2SR_IAL) {
 			temp &= ~IMX_I2C_I2SR_IAL;
-			REG8_STORE(I2C2_BASE + IMX_I2C_I2SR, temp);
+			REG8_STORE(adapter->base_addr + IMX_I2C_I2SR, temp);
 			log_error("arbitration lost");
 			return -EAGAIN;
 		}
@@ -210,21 +197,20 @@ int imx_i2c_bus_busy(void) {
 		if (temp & IMX_I2C_I2SR_IBB) {
 			return 0;
 		}
-		delay(1000);
+		delay(100);
 	}
 	return -ETIMEDOUT;
 }
 
-static int imx_i2c_trx_complete(void) {
+static int imx_i2c_trx_complete(struct imx_i2c *adapter) {
 	uint32_t temp;
 	volatile int i;
 
 	for (i = 0; i < 10000; i++) {
-		temp = REG8_LOAD(I2C2_BASE + IMX_I2C_I2SR);
+		temp = REG8_LOAD(adapter->base_addr + IMX_I2C_I2SR);
 
-		//log_debug("status(%x)", temp);
 		if ( temp & IMX_I2C_I2SR_IIF) {
-			REG8_STORE(I2C2_BASE + IMX_I2C_I2SR, 0);
+			REG8_STORE(adapter->base_addr + IMX_I2C_I2SR, 0);
 			return 0;
 		}
 		delay(100);
@@ -236,74 +222,73 @@ int imx_i2c_send(uint16_t addr, uint8_t ch) {
 	return 0;
 }
 
-static int imx_i2c_stop(void) {
+static int imx_i2c_stop(struct imx_i2c *adapter) {
 	uint32_t tmp;
 
-	tmp = REG8_LOAD(I2C2_BASE + IMX_I2C_I2CR);
+	tmp = REG8_LOAD(adapter->base_addr + IMX_I2C_I2CR);
 	tmp &= ~(IMX_I2C_I2CR_MSTA | IMX_I2C_I2CR_MTX) ;
-	REG8_STORE(I2C2_BASE + IMX_I2C_I2CR, tmp);
+	REG8_STORE(adapter->base_addr + IMX_I2C_I2CR, tmp);
 	delay(100);
-	tmp = REG8_LOAD(I2C2_BASE + IMX_I2C_I2CR);
+	tmp = REG8_LOAD(adapter->base_addr + IMX_I2C_I2CR);
 	tmp &= ~(IMX_I2C_I2CR_IEN) ;
-	REG8_STORE(I2C2_BASE + IMX_I2C_I2CR, tmp);
+	REG8_STORE(adapter->base_addr + IMX_I2C_I2CR, tmp);
 
 	return 0;
 }
 
-static int imx_i2c_start(void) {
+static int imx_i2c_start(struct imx_i2c *adapter) {
 	uint32_t tmp;
 
-	tmp = REG8_LOAD(I2C2_BASE + IMX_I2C_I2SR);
+	tmp = REG8_LOAD(adapter->base_addr + IMX_I2C_I2SR);
 
-	REG8_STORE(I2C2_BASE + IMX_I2C_I2CR, IMX_I2C_I2CR_IEN );
+	REG8_STORE(adapter->base_addr + IMX_I2C_I2CR, IMX_I2C_I2CR_IEN );
 
 	delay(100);
 
 	/* Start I2C transaction */
-	tmp = REG8_LOAD(I2C2_BASE + IMX_I2C_I2CR);
+	tmp = REG8_LOAD(adapter->base_addr + IMX_I2C_I2CR);
 	tmp |= IMX_I2C_I2CR_MSTA | IMX_I2C_I2CR_MTX ;
-	REG8_STORE(I2C2_BASE + IMX_I2C_I2CR, tmp);
+	REG8_STORE(adapter->base_addr+ IMX_I2C_I2CR, tmp);
 
-	tmp = imx_i2c_bus_busy();
+	tmp = imx_i2c_bus_busy(adapter, 1);
 	if (tmp) {
 		return -1;
 	}
 
-	tmp = REG8_LOAD(I2C2_BASE + IMX_I2C_I2CR);
+	tmp = REG8_LOAD(adapter->base_addr + IMX_I2C_I2CR);
 	tmp |= IMX_I2C_I2CR_MTX | IMX_I2C_I2CR_TXAK;
-	REG8_STORE(I2C2_BASE + IMX_I2C_I2CR, tmp);
+	REG8_STORE(adapter->base_addr + IMX_I2C_I2CR, tmp);
 
 	return 0;
 }
 
-static int imx_i2c_rx(uint16_t addr, uint8_t *buff, size_t sz) {
+static int imx_i2c_rx(struct imx_i2c *adapter, uint16_t addr, uint8_t *buff, size_t sz) {
 	int res = -1;
 	int cnt;
 	uint32_t tmp;
 
 	/* write slave address */
-	REG8_STORE(I2C2_BASE + IMX_I2C_I2DR, (uint32_t)((addr << 1) | 0x1));
-	res = imx_i2c_trx_complete();
+	REG8_STORE(adapter->base_addr + IMX_I2C_I2DR, (uint32_t)((addr << 1) | 0x1));
+	res = imx_i2c_trx_complete(adapter);
 	if (res) {
-		//log_error("i2c complition error");
 		goto out;
 	}
-	if (REG8_LOAD(I2C2_BASE + IMX_I2C_I2SR) &  IMX_I2C_I2SR_RXAK) {
+	if (REG8_LOAD(adapter->base_addr + IMX_I2C_I2SR) &  IMX_I2C_I2SR_RXAK) {
 		res = -1;
 		goto out;
 	}
 
 	log_debug("ACK received %d", addr);
-	tmp = REG8_LOAD(I2C2_BASE + IMX_I2C_I2CR);
+	tmp = REG8_LOAD(adapter->base_addr + IMX_I2C_I2CR);
 	tmp &= ~(IMX_I2C_I2CR_MTX & IMX_I2C_I2CR_TXAK);
-	REG8_STORE(I2C2_BASE + IMX_I2C_I2CR, tmp);
+	REG8_STORE(adapter->base_addr + IMX_I2C_I2CR, tmp);
 
 	/* dummy read */
-	tmp = REG8_LOAD(I2C2_BASE + IMX_I2C_I2DR);
+	tmp = REG8_LOAD(adapter->base_addr + IMX_I2C_I2DR);
 
 	res = sz;
 	for (cnt = sz; cnt > 0; cnt--) {
-		tmp = imx_i2c_trx_complete();
+		tmp = imx_i2c_trx_complete(adapter);
 		if (tmp) {
 			log_error("i2c complition error");
 			res = -1;
@@ -317,37 +302,37 @@ static int imx_i2c_rx(uint16_t addr, uint8_t *buff, size_t sz) {
 			 * It must generate STOP before read I2DR to prevent
 			 * controller from generating another clock cycle
 			 */
-			tmp = REG8_LOAD(I2C2_BASE + IMX_I2C_I2CR);
+			tmp = REG8_LOAD(adapter->base_addr + IMX_I2C_I2CR);
 			tmp &= ~(IMX_I2C_I2CR_MTX & IMX_I2C_I2CR_MSTA);
-			REG8_STORE(I2C2_BASE + IMX_I2C_I2CR, tmp);
+			REG8_STORE(adapter->base_addr + IMX_I2C_I2CR, tmp);
 		}
 
-		imx_i2c_bus_busy();
+		imx_i2c_bus_busy(adapter, 0);
 
-		tmp = REG8_LOAD(I2C2_BASE + IMX_I2C_I2DR);
+		tmp = REG8_LOAD(adapter->base_addr + IMX_I2C_I2DR);
 
 		*buff = (uint8_t)(tmp & 0xFF);
-
 	}
 
 out:
 	return res;
 }
 
-int imx_i2c_read(uint16_t addr, uint8_t *buff, size_t sz) {
-
+int imx_i2c_read(struct i2c_bus *bus, uint16_t addr, uint8_t *buff, size_t sz) {
+	struct imx_i2c *adapter;
 	int res = -1;
 
 	log_debug("start %d", addr);
-	if (imx_i2c_start()) {
+	adapter = bus->adapter_priv;
+	if (imx_i2c_start(adapter)) {
 		log_error("i2c  bus error");
 		res = -1;
 		goto out;
 	}
 
-	res = imx_i2c_rx(addr, buff, sz);
+	res = imx_i2c_rx(adapter, addr, buff, sz);
 out:
-	imx_i2c_stop();
+	imx_i2c_stop(adapter);
 
 	return res;
 }
