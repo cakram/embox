@@ -25,4 +25,6 @@ extern int i2c_bus_unregister(int bus_id);
 
 extern struct i2c_bus *i2c_bus_get(int id);
 
+extern int i2c_bus_read(int id, uint16_t addr, uint8_t *ch, size_t sz);
+
 #endif

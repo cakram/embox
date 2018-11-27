@@ -52,14 +52,12 @@ int i2c_bus_register(void *adapter_priv, int id, const char *bus_name) {
 	strncpy(i2c_bus->name, bus_name, MAX_I2C_BUS_NAME - 1);
 	i2c_bus->name[MAX_I2C_BUS_NAME - 1] = '\0';
 
-
-
 	i2c_bus_repo[id] = i2c_bus;
 
 	return 0;
 }
 
-int i2c_bus_unregister_bus(int id) {
+int i2c_bus_unregister(int id) {
 
 	if (id < 0 || id > I2C_BUS_MAX) {
 		return -EINVAL;
@@ -77,6 +75,21 @@ struct i2c_bus *i2c_bus_get(int id) {
 		return err_ptr(EINVAL);
 	}
 	return i2c_bus_repo[id];
+}
+
+extern int imx_i2c_read(struct i2c_bus *bus, uint16_t addr, uint8_t *buff, size_t sz);
+
+int i2c_bus_read(int id, uint16_t addr, uint8_t *ch, size_t sz) {
+	struct i2c_bus *bus;
+
+	if (id < 0 || id > I2C_BUS_MAX) {
+		return -EINVAL;
+	}
+	bus = i2c_bus_get(id);
+	if (err(bus) || bus == NULL) {
+		return -EBUSY;
+	}
+	return imx_i2c_read(bus, addr, ch, sz);
 }
 
 static int i2c_init(void) {
