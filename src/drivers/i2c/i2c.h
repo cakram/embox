@@ -1,27 +1,28 @@
 #ifndef DRIVERS_I2C_H_
 #define DRIVERS_I2C_H_
 
-struct i2c_device {
-	struct i2c_device *next;
-};
+#include <util/dlist.h>
+#include <framework/mod/options.h>
+#include <config/embox/driver/i2c.h>
 
-struct i2c_adapter {
-	void *priv;
-};
+#define I2C_BUS_MAX   \
+	OPTION_MODULE_GET(embox__driver__i2c, NUMBER, i2c_bus_max)
+
+#define MAX_I2C_BUS_NAME    8
 
 struct i2c_bus {
 	int id;
-	int free_entry;
-	struct i2c_adapter *adapter;
-	struct i2c_device devices;
+	char name[MAX_I2C_BUS_NAME];
+
+	void *adapter_priv;
+
+	struct dlist_head i2c_bus_list;
 };
 
-int register_i2c_bus(struct i2c_adapter*);
-int unregister_i2c_bus(int bus_id);
-struct i2c_bus* get_i2c_bus(int);
-int enumerate_i2c_buses(int (*)(int, void*), void*);
+extern int i2c_bus_register(void *adapter_priv, int id, const char *bus_name);
 
-int register_i2c_device(int, struct i2c_device*);
-int enumerate_i2c_devices(int, int (*)(struct i2c_device*, void*), void*);
+extern int i2c_bus_unregister(int bus_id);
+
+extern struct i2c_bus *i2c_bus_get(int id);
 
 #endif
