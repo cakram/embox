@@ -23,7 +23,7 @@ static struct i2c_bus *i2c_bus_repo[I2C_BUS_MAX];
 
 POOL_DEF(i2c_bus_pool, struct i2c_bus, I2C_BUS_MAX);
 
-int i2c_bus_register(void *adapter_priv, int id, const char *bus_name) {
+int i2c_bus_register(struct i2c_adapter *adap, int id, const char *bus_name) {
 	struct i2c_bus *i2c_bus;
 
 	if (id < 0 || id > I2C_BUS_MAX) {
@@ -46,7 +46,7 @@ int i2c_bus_register(void *adapter_priv, int id, const char *bus_name) {
 		return -ENOMEM;
 	}
 
-	i2c_bus->adapter_priv = adapter_priv;
+	i2c_bus->i2c_adapter = adap;
 	i2c_bus->id = id;
 
 	strncpy(i2c_bus->name, bus_name, MAX_I2C_BUS_NAME - 1);
@@ -77,10 +77,14 @@ struct i2c_bus *i2c_bus_get(int id) {
 	return i2c_bus_repo[id];
 }
 
-extern int imx_i2c_read(struct i2c_bus *bus, uint16_t addr, uint8_t *buff, size_t sz);
-
 int i2c_bus_read(int id, uint16_t addr, uint8_t *ch, size_t sz) {
 	struct i2c_bus *bus;
+	struct i2c_msg msg = {
+			.addr = addr,
+			.buf = ch,
+			.flags = I2C_M_RD,
+			.len = sz
+	};
 
 	if (id < 0 || id > I2C_BUS_MAX) {
 		return -EINVAL;
@@ -89,7 +93,7 @@ int i2c_bus_read(int id, uint16_t addr, uint8_t *ch, size_t sz) {
 	if (err(bus) || bus == NULL) {
 		return -EBUSY;
 	}
-	return imx_i2c_read(bus, addr, ch, sz);
+	return bus->i2c_adapter->i2c_algo->i2c_master_xfer(bus->i2c_adapter, &msg, 1);
 }
 
 static int i2c_init(void) {
