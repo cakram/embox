@@ -7,8 +7,8 @@ module imx_i2c {
 	option number i2c2_pins_select=0
 	option number i2c3_pins_select=0
 	
-
 	source "imx_i2c.c"
 
 	depends embox.driver.i2c
+	@NoRuntime depends embox.arch.arm.imx.iomuxc
 }

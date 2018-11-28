@@ -14,6 +14,7 @@
 #include <drivers/common/memory.h>
 #include <drivers/clk/ccm_imx6.h>
 #include <drivers/i2c/i2c.h>
+#include <drivers/iomuxc.h>
 
 #include <embox/unit.h>
 
@@ -24,61 +25,6 @@ EMBOX_UNIT_INIT(imx_i2c_init);
 #define I2C1_PIN_SEL  OPTION_GET(NUMBER,i2c1_pins_select)
 #define I2C2_PIN_SEL  OPTION_GET(NUMBER,i2c2_pins_select)
 #define I2C3_PIN_SEL  OPTION_GET(NUMBER,i2c3_pins_select)
-
-#define IOMUXC_BASE                         0x020E0000
-
-#define IOMUXC_SW_MUX_CTL_PAD_EIM_EB2_B          0x08C
-#define IOMUXC_SW_MUX_CTL_PAD_EIM_DATA16         0x090
-#define IOMUXC_SW_MUX_CTL_PAD_EIM_DATA17         0x094
-#define IOMUXC_SW_MUX_CTL_PAD_EIM_DATA18         0x098
-
-#define IOMUXC_SW_MUX_CTL_PAD_EIM_DATA21         0x0A4
-
-#define IOMUXC_SW_MUX_CTL_PAD_EIM_DATA24         0x0B4
-#define IOMUXC_SW_MUX_CTL_PAD_EIM_DATA25         0x0B8
-
-#define IOMUXC_SW_MUX_CTL_PAD_EIM_DATA28         0x0C4
-
-#define IOMUXC_SW_MUX_CTL_PAD_KEY_COL0           0x1F8
-#define IOMUXC_SW_MUX_CTL_PAD_KEY_ROW0           0x1FC
-
-#define IOMUXC_SW_MUX_CTL_PAD_KEY_COL3           0x210
-#define IOMUXC_SW_MUX_CTL_PAD_KEY_ROW3           0x214
-
-#define IOMUXC_SW_MUX_CTL_PAD_GPIO03             0x22C
-
-#define IOMUXC_SW_MUX_CTL_PAD_GPIO06             0x230
-
-#define IOMUXC_SW_MUX_CTL_PAD_GPIO05             0x23C
-
-#define IOMUXC_SW_MUX_CTL_PAD_GPIO16             0x248
-
-#define IOMUXC_SW_MUX_CTL_PAD_CSI0_DATA08        0x278
-#define IOMUXC_SW_MUX_CTL_PAD_CSI0_DATA09        0x27C
-
-#define IOMUXC_SW_MUX_CTL_PAD_SD3_DATA7          0x2A8
-#define IOMUXC_SW_MUX_CTL_PAD_SD3_DATA6          0x2AC
-
-#define IOMUXC_I2C1_SCL_IN_SELECT_INPUT          0x898
-#define IOMUXC_I2C1_SDA_IN_SELECT_INPUT          0x89C
-#define IOMUXC_I2C2_SCL_IN_SELECT_INPUT          0x8A0
-#define IOMUXC_I2C2_SDA_IN_SELECT_INPUT          0x8A4
-#define IOMUXC_I2C3_SCL_IN_SELECT_INPUT          0x8A8
-#define IOMUXC_I2C3_SDA_IN_SELECT_INPUT          0x8AC
-
-#define IOMUXC_UART1_UART_RX_DATA_SELECT_INPUT   0x920
-#define IOMUXC_UART2_UART_RX_DATA_SELECT_INPUT   0x928
-#define IOMUXC_UART3_UART_RX_DATA_SELECT_INPUT   0x930
-#define IOMUXC_UART4_UART_RX_DATA_SELECT_INPUT   0x938
-
-void iomuxc_set_reg(uint32_t reg, uint32_t val) {
-	REG32_STORE(IOMUXC_BASE + reg, val);
-}
-
-uint32_t iomuxc_get_reg(uint32_t reg) {
-	return REG32_LOAD(IOMUXC_BASE + reg);
-}
-
 
 #define I2C1_BASE     0x21A0000
 #define I2C2_BASE     0x21A4000
@@ -357,14 +303,3 @@ static struct periph_memory_desc imx_i2c3_mem = {
 };
 
 PERIPH_MEMORY_DEFINE(imx_i2c3_mem);
-
-
-#if 0
-/*  mapped in imx_uart */
-static struct periph_memory_desc iomuxc_mem = {
-	.start = IOMUXC_BASE,
-	.len   = 0x1000,
-};
-
-PERIPH_MEMORY_DEFINE(iomuxc_mem);
-#endif
