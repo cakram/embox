@@ -22,6 +22,14 @@
 
 EMBOX_UNIT_INIT(imx_i2c_init);
 
+static int imx_i2c_read(struct i2c_adapter *adapter, struct i2c_msg *msgs,
+		int num);
+
+static const struct i2c_algorithm imx_i2c_algo = {
+		.i2c_master_xfer = imx_i2c_read,
+		.i2c_functionality = NULL,
+};
+
 #define I2C1_PIN_SEL  OPTION_GET(NUMBER,i2c1_pins_select)
 #define I2C2_PIN_SEL  OPTION_GET(NUMBER,i2c2_pins_select)
 #define I2C3_PIN_SEL  OPTION_GET(NUMBER,i2c3_pins_select)
@@ -34,19 +42,34 @@ EMBOX_UNIT_INIT(imx_i2c_init);
 #define I2C2_IRQ_NUM  69
 #define I2C3_IRQ_NUM  70
 
-static struct imx_i2c imx_i2c1_adapter = {
+static struct imx_i2c imx_i2c1_priv = {
 		.irq_num = I2C1_IRQ_NUM,
 		.base_addr = I2C1_BASE,
 };
 
-static struct imx_i2c imx_i2c2_adapter = {
+static struct imx_i2c imx_i2c2_priv = {
 		.irq_num = I2C2_IRQ_NUM,
 		.base_addr = I2C2_BASE,
 };
 
-static struct imx_i2c imx_i2c3_adapter = {
+static struct imx_i2c imx_i2c3_priv = {
 		.irq_num = I2C3_IRQ_NUM,
 		.base_addr = I2C3_BASE,
+};
+
+static struct i2c_adapter imx_i2c1_adap = {
+	.i2c_algo_data = &imx_i2c1_priv,
+	.i2c_algo = &imx_i2c_algo,
+};
+
+static struct i2c_adapter imx_i2c2_adap = {
+	.i2c_algo_data = &imx_i2c2_priv,
+	.i2c_algo = &imx_i2c_algo,
+};
+
+static struct i2c_adapter imx_i2c3_adap = {
+	.i2c_algo_data = &imx_i2c3_priv,
+	.i2c_algo = &imx_i2c_algo,
 };
 
 static inline void imx_i2c3_pins_init(void) {
@@ -105,9 +128,9 @@ static inline void imx_i2c1_pins_init(void) {
 
 static int imx_i2c_init(void) {
 
-	i2c_bus_register(&imx_i2c1_adapter, 1, "i2c1");
-	i2c_bus_register(&imx_i2c2_adapter, 2, "i2c2");
-	i2c_bus_register(&imx_i2c3_adapter, 3, "i2c3");
+	i2c_bus_register(&imx_i2c1_adap, 1, "i2c1");
+	i2c_bus_register(&imx_i2c2_adap, 2, "i2c2");
+	i2c_bus_register(&imx_i2c3_adap, 3, "i2c3");
 
 	//imx_i2c1_pins_init();
 	//clk_enable("i2c1");
@@ -264,19 +287,19 @@ out:
 	return res;
 }
 
-int imx_i2c_read(struct i2c_bus *bus, uint16_t addr, uint8_t *buff, size_t sz) {
+int imx_i2c_read(struct i2c_adapter *adap, struct i2c_msg *msgs, int num) {
 	struct imx_i2c *adapter;
 	int res = -1;
 
-	log_debug("start %d", addr);
-	adapter = bus->adapter_priv;
+	adapter = adap->i2c_algo_data;
 	if (imx_i2c_start(adapter)) {
 		log_error("i2c  bus error");
 		res = -1;
 		goto out;
 	}
 
-	res = imx_i2c_rx(adapter, addr, buff, sz);
+	res = imx_i2c_rx(adapter, msgs->addr, msgs->buf, 0);
+
 out:
 	imx_i2c_stop(adapter);
 
