@@ -4,7 +4,7 @@ module imx_i2c {
 	option number log_level=0
 
 	option number i2c1_pins_select=0
-	option number i2c2_pins_select=0
+	option number i2c2_pins_select=1
 	option number i2c3_pins_select=0
 	
 	source "imx_i2c.c"

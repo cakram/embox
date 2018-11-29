@@ -74,7 +74,7 @@ static struct i2c_adapter imx_i2c3_adap = {
 
 static inline void imx_i2c3_pins_init(void) {
 #if I2C3_PIN_SEL == 1
-	iomuxc_set_reg(IOMUXC_SW_MUX_CTL_PAD_GPIO03, 2)
+	iomuxc_set_reg(IOMUXC_SW_MUX_CTL_PAD_GPIO03, 2);
 	iomuxc_set_reg(IOMUXC_I2C3_SCL_IN_SELECT_INPUT, 1);
 
 	iomuxc_set_reg(IOMUXC_SW_MUX_CTL_PAD_GPIO06, 2);
@@ -96,7 +96,7 @@ static inline void imx_i2c3_pins_init(void) {
 
 static inline void imx_i2c2_pins_init(void) {
 #if I2C2_PIN_SEL
-	iomuxc_set_reg(IOMUXC_SW_MUX_CTL_PAD_KEY_COL3, 4)
+	iomuxc_set_reg(IOMUXC_SW_MUX_CTL_PAD_KEY_COL3, 4);
 	iomuxc_set_reg(IOMUXC_I2C2_SCL_IN_SELECT_INPUT, 1);
 
 	iomuxc_set_reg(IOMUXC_SW_MUX_CTL_PAD_KEY_ROW3, 4);
@@ -112,7 +112,7 @@ static inline void imx_i2c2_pins_init(void) {
 
 static inline void imx_i2c1_pins_init(void) {
 #if I2C1_PIN_SEL
-	iomuxc_set_reg(IOMUXC_SW_MUX_CTL_PAD_CSI0_DATA09, 4)
+	iomuxc_set_reg(IOMUXC_SW_MUX_CTL_PAD_CSI0_DATA09, 4);
 	iomuxc_set_reg(IOMUXC_I2C1_SCL_IN_SELECT_INPUT, 1);
 
 	iomuxc_set_reg(IOMUXC_SW_MUX_CTL_PAD_CSI0_DATA08, 4);
@@ -132,13 +132,13 @@ static int imx_i2c_init(void) {
 	i2c_bus_register(&imx_i2c2_adap, 2, "i2c2");
 	i2c_bus_register(&imx_i2c3_adap, 3, "i2c3");
 
-	//imx_i2c1_pins_init();
-	//clk_enable("i2c1");
+//	imx_i2c2_pins_init();
+//	clk_enable("i2c2");
 
-	REG8_STORE(I2C2_BASE + IMX_I2C_IFDR, 0x3F); /* lowest freq */
-	REG8_STORE(I2C2_BASE + IMX_I2C_IADR, 0x17);
-	REG8_STORE(I2C2_BASE + IMX_I2C_I2CR, 0 );
-	REG8_STORE(I2C2_BASE + IMX_I2C_I2SR, 0);
+//	REG8_STORE(I2C2_BASE + IMX_I2C_IFDR, 0x3F); /* lowest freq */
+//	REG8_STORE(I2C2_BASE + IMX_I2C_IADR, 0x10);
+//	REG8_STORE(I2C2_BASE + IMX_I2C_I2CR, 0 );
+//	REG8_STORE(I2C2_BASE + IMX_I2C_I2SR, 0);
 
 	return 0;
 }
@@ -179,7 +179,6 @@ static int imx_i2c_trx_complete(struct imx_i2c *adapter) {
 		temp = REG8_LOAD(adapter->base_addr + IMX_I2C_I2SR);
 
 		if ( temp & IMX_I2C_I2SR_IIF) {
-			REG8_STORE(adapter->base_addr + IMX_I2C_I2SR, 0);
 			return 0;
 		}
 		delay(100);
@@ -208,15 +207,14 @@ static int imx_i2c_stop(struct imx_i2c *adapter) {
 static int imx_i2c_start(struct imx_i2c *adapter) {
 	uint32_t tmp;
 
-	tmp = REG8_LOAD(adapter->base_addr + IMX_I2C_I2SR);
-
+	REG8_STORE(adapter->base_addr + IMX_I2C_I2SR, 0 );
 	REG8_STORE(adapter->base_addr + IMX_I2C_I2CR, IMX_I2C_I2CR_IEN );
 
-	delay(100);
+	delay(1000);
 
 	/* Start I2C transaction */
 	tmp = REG8_LOAD(adapter->base_addr + IMX_I2C_I2CR);
-	tmp |= IMX_I2C_I2CR_MSTA | IMX_I2C_I2CR_MTX ;
+	tmp |= IMX_I2C_I2CR_MSTA ;
 	REG8_STORE(adapter->base_addr+ IMX_I2C_I2CR, tmp);
 
 	tmp = imx_i2c_bus_busy(adapter, 1);
@@ -236,6 +234,7 @@ static int imx_i2c_rx(struct imx_i2c *adapter, uint16_t addr, uint8_t *buff, siz
 	int cnt;
 	uint32_t tmp;
 
+	REG8_STORE(adapter->base_addr + IMX_I2C_I2SR, 0);
 	/* write slave address */
 	REG8_STORE(adapter->base_addr + IMX_I2C_I2DR, (uint32_t)((addr << 1) | 0x1));
 	res = imx_i2c_trx_complete(adapter);
@@ -287,7 +286,7 @@ out:
 	return res;
 }
 
-int imx_i2c_read(struct i2c_adapter *adap, struct i2c_msg *msgs, int num) {
+static int imx_i2c_read(struct i2c_adapter *adap, struct i2c_msg *msgs, int num) {
 	struct imx_i2c *adapter;
 	int res = -1;
 
