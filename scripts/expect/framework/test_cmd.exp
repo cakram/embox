@@ -1,11 +1,22 @@
-proc test_assert_regexp_equal {cmd success_output} {
-	send $cmd
-	set cmd_name [lindex [split $cmd " "] 0]
-	expect "$cmd"
+proc __expect_regexp {cmd_name pattern} {
 	expect {
-	         timeout { puts "$cmd_name timeout\n"; exit 1 }
-	        -regexp "$cmd_name:.*" { puts "$expect_out(buffer)\n"; exit 1  }
-	        "$success_output" { }
+	     timeout { puts "\n\nautotest error: Waiting for \"$pattern\" pattern timeout\n\n"; exit 1 }
+	    -re "$cmd_name:.*" { puts "$expect_out(buffer)\n"; exit 1  }
+		-re "$pattern" {}
+	}
+	return 0
+}
+
+# Sends $cmd to remote target (Embox) and sequentially waits for each
+# pattern from $args to appear
+proc test_assert_regexp_equal {cmd args} {
+	set cmd_name [lindex [split $cmd " "] 0]
+
+	send $cmd
+	expect "$cmd"
+
+	foreach pattern $args {
+		__expect_regexp $cmd_name $pattern
 	}
 	return 0
 }
