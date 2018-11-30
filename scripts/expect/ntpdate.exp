@@ -29,7 +29,7 @@ TEST_CASE {ntpdate test} {
 	variable host_ip
 	global host_date
 
-	test_assert_regexp_equal "ntpdate $host_ip\r\n" ":/#"
+	test_assert_regexp_equal "ntpdate $host_ip\r" ":/#"
 
 	# And compare the host date with the Embox's one.
 	# XXX: compare the both times too, not only dates
