@@ -19,14 +19,21 @@ proc run_all_tests {} {
 		exec touch .tmp.txt
 
 		set status 0
-		if {[catch {exec expect $dir/../$t.exp >> .tmp.txt} results options]} {
-		    set details [dict get $options -errorcode]
-		    if {[lindex $details 0] eq "CHILDSTATUS"} {
-		        set status [lindex $details 2]
-		    } else {
-		        # Some other error; regenerate it to let caller handle
-		        return -options $options -level 0 $results
-		    }
+
+		# Try to execute each test up to 3 times if it fails
+		for {set tries 0} {$tries < 3} {incr tries} {
+			if {[catch {exec expect $dir/../$t.exp >> .tmp.txt} results options]} {
+			    set details [dict get $options -errorcode]
+			    if {[lindex $details 0] eq "CHILDSTATUS"} {
+			        set status [lindex $details 2]
+			    } else {
+			        # Some other error; regenerate it to let caller handle
+			        return -options $options -level 0 $results
+			    }
+			}
+			if {$status == 0} {
+				break
+			}
 		}
 
 		exec cat .tmp.txt >> $logfile
@@ -38,6 +45,8 @@ proc run_all_tests {} {
 		} else {
 			puts "    autotest: PASSED"
 		}
+
+		exec sleep 0.5
 	}
 }
 
