@@ -44,7 +44,7 @@ proc ::autotest::test_exec {test_name test_body} {
 			exit 1
 		}
 	}
-	send "exit"
+	send "exit\r"
 
 	return 0
 }
