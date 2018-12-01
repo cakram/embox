@@ -77,6 +77,8 @@ static void ignore_telnet_options(int sock, int pptyfd) {
 	}
 
 	while (1) {
+		usleep(10000);
+
 		if (ch == T_IAC) {
 			read(sock, &op_type, 1);
 
