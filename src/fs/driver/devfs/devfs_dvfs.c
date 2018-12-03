@@ -97,14 +97,14 @@ static int devfs_iterate(struct inode *next, struct inode *parent, struct dir_ct
 		i = 0;
 		array_spread_foreach_ptr(dev_module, __char_device_registry) {
 			if (i++ == (int) ctx->fs_ctx >> 2) {
-				ctx->fs_ctx = (void*) ((int) ctx->fs_ctx + 0x4);
+				ctx->fs_ctx = (void*) ((int) ctx->fs_ctx + 0x4 * i);
 				devfs_fill_inode(next, dev_module, S_IFCHR);
 				return 0;
 			}
 		}
 		dlist_foreach_entry(dev_module, &cdev_repo_list, cdev_list) {
 			if (i++ == (int) ctx->fs_ctx >> 2) {
-				ctx->fs_ctx = (void*) ((int) ctx->fs_ctx + 0x4);
+				ctx->fs_ctx = (void*) ((int) ctx->fs_ctx + 0x4 * i);
 				devfs_fill_inode(next, dev_module, S_IFCHR);
 				return 0;
 			}
