@@ -31,6 +31,7 @@ int main(int argc, char **argv) {
 	int i = 1;
 	uint8_t fr = 0, lr = 0;
 	char *endp;
+	uint8_t buf;
 
 	while (-1 != (opt = getopt(argc, argv, "hyr:"))) {
 		i++;
@@ -57,7 +58,12 @@ int main(int argc, char **argv) {
 	}
 	busn = strtol(argv[i++], NULL, 0);
 	chip_addr = strtol(argv[i], NULL, 0);
-	printf ("regs(0x%x-0x%x) bus(%d) chip(0x%x)\n", fr, lr, (int) busn, (unsigned )chip_addr);
+	printf("regs(0x%x-0x%x) bus(%d) chip(0x%x)\n", fr, lr, (int) busn, (unsigned )chip_addr);
+	if (0 < i2c_bus_read(busn, chip_addr, &buf, 1)) {
+		printf("res (%x)\n", (unsigned) buf);
+	} else {
+		printf("can't read\n");
+	}
 
 	return 0;
 }
