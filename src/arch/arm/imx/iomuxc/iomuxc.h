@@ -10,6 +10,10 @@
 
 #include <stdint.h>
 
+
+#define IOMUXC_GPR2                              0x008
+#define IOMUXC_GPR3                              0x00C
+
 #define IOMUXC_SW_MUX_CTL_PAD_EIM_EB2_B          0x08C
 #define IOMUXC_SW_MUX_CTL_PAD_EIM_DATA16         0x090
 #define IOMUXC_SW_MUX_CTL_PAD_EIM_DATA17         0x094
