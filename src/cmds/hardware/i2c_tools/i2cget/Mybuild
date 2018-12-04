@@ -1,0 +1,21 @@
+package embox.cmd.i2c_tools
+
+@AutoCmd
+@Cmd(name = "i2cget",
+	help = "read from I2C/SMBus chip registers ",
+	man = '''
+		NAME
+			i2cget - read from I2C/SMBus chip registers
+		SYNOPSIS
+			i2cget [-y] i2cbus chip-address [data-address [mode]]
+		DESCRIPTION
+			i2cget is a small helper program to read registers visible through the I2C bus (or SMBus). 
+		OPTIONS
+			-y Disable interactive mode
+			-h print help
+		AUTHOR
+			Anton Bondarev
+	''')
+module i2cget {
+	source "i2cget.c"
+}
