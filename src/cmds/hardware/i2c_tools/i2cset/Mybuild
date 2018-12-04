@@ -5,7 +5,7 @@ package embox.cmd.i2c_tools
 	help = "set I2C registers ",
 	man = '''
 		NAME
-			i2cset - detect I2C chips
+			i2cset - set I2C registers 
 		SYNOPSIS
 			i2cset [-y] i2cbus chip-address data-address [value] ... [mode]
 		DESCRIPTION
